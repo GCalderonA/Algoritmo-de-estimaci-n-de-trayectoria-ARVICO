@@ -27,28 +27,28 @@ def encontrar_bordes(total_ridges, num_sections=12):
     y_min, y_max = np.min(total_ridges[:, 1]), np.max(total_ridges[:, 1])
     y_sections = np.linspace(y_min, y_max, num_sections + 1)
     
-    # Inicializar lista para los bordes combinados y puntos dentro de los bordes
+
     combined_borders = []
     ridge_points_within_borders = []
     
-    # Iterar por secciones del eje Y desde abajo hacia arriba
+
     previous_x_min, previous_x_max = range_x_min, range_x_max  # Inicializar límites con el rango inicial
     
     for i in range(num_sections - 1, -1, -1):  # Iterar de abajo hacia arriba
         y_lower, y_upper = y_sections[i], y_sections[i + 1]
     
-        # Filtrar puntos en la sección actual
+
         section_points = total_ridges[(total_ridges[:, 1] >= y_lower) & (total_ridges[:, 1] < y_upper)]
     
-        # Usar los límites del bloque anterior como inicio
+     
         current_x_min, current_x_max = previous_x_min, previous_x_max
     
-        # Ajustar dinámicamente los rangos de X si es necesario
+   
         while True:
-            # Filtrar puntos dentro del rango actual en X
+     
             section_points_in_range = section_points[(section_points[:, 0] >= current_x_min) & (section_points[:, 0] <= current_x_max)]
     
-            # Verificar si hay puntos más allá del límite izquierdo o derecho en un rango de 0.1 de los puntos actuales
+  
             points_left_beyond = section_points[(section_points[:, 0] < current_x_min) & (section_points[:, 0] >= current_x_min - 0.1)]
             points_right_beyond = section_points[(section_points[:, 0] > current_x_max) & (section_points[:, 0] <= current_x_max + 0.1)]
     
@@ -61,33 +61,24 @@ def encontrar_bordes(total_ridges, num_sections=12):
                 break
     
         if len(section_points_in_range) > 0:
-            # Encontrar el punto más cercano a la izquierda (mínimo X)
             left_point = section_points_in_range[np.argmin(section_points_in_range[:, 0])]
-    
-            # Encontrar el punto más cercano a la derecha (máximo X)
             right_point = section_points_in_range[np.argmax(section_points_in_range[:, 0])]
     
-            # Verificar si la diferencia entre los bordes es mayor a 0.05
             if abs(right_point[0] - left_point[0]) > 0.05:
-                # Agregar ambos puntos a la lista combinada
                 combined_borders.append(left_point)
                 combined_borders.append(right_point)
     
-                # Guardar los puntos dentro de los bordes detectados
                 points_within = section_points[(section_points[:, 0] >= left_point[0]) & (section_points[:, 0] <= right_point[0])]
                 ridge_points_within_borders.extend(points_within)
-    
-            # Actualizar los límites para la siguiente sección
             previous_x_min, previous_x_max = current_x_min, current_x_max
 
-    # Convertir a numpy arrays
     combined_borders = np.array(combined_borders)
     ridge_points_within_borders = np.array(ridge_points_within_borders)
 
     return combined_borders, ridge_points_within_borders
 
 def recta_estimada(verts):
-    MIN_DISTANCE = 0.001  # Adjust based on your requirements
+    MIN_DISTANCE = 0.001  
     MAX_DISTANCE = 3.5 
   
     valid_vertices = verts[
@@ -102,7 +93,7 @@ def recta_estimada(verts):
     
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(valid_vertices)
-    voxel_size = 0.01  # Ajusta según tu necesidad
+    voxel_size = 0.01  
     downsampled_pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
     downsampled_vertices = np.asarray(downsampled_pcd.points)
     total_ridges= [];
@@ -115,10 +106,9 @@ def recta_estimada(verts):
     for i in range (8):
         sliced_frame = downsampled_vertices[(downsampled_vertices[:, 2] >= (z_min-cut_distance*i)) & (downsampled_vertices[:, 2] <= (z_max-cut_distance*i))&(downsampled_vertices[:, 1] < 2)]
         rotated_frame_cut = sliced_frame[(sliced_frame[:, 0] >= (-2)) & (sliced_frame[:, 0] <= (2))]
-        X = rotated_frame_cut[:, 0].reshape(-1, 1)  # Variable independiente (eje X)
+        X = rotated_frame_cut[:, 0].reshape(-1, 1)  
         Y = rotated_frame_cut[:, 1]
         try:
-            # Intentar ajustar el modelo
             model = LinearRegression()
             model.fit(X, Y)
             Y_pred = model.predict(X)
@@ -166,14 +156,12 @@ def recta_estimada(verts):
     return two_points, downsampled_vertices
 
 def rotate_point_cloud_y(points, pitch_angle):
-    # Matriz de rotación alrededor del eje Y
     R_x = np.array([
         [1, 0, 0],
         [0, np.cos(pitch_angle), -np.sin(pitch_angle)],
         [0, np.sin(pitch_angle), np.cos(pitch_angle)]
     ])
 
-    # Aplicar la rotación a cada punto
     rotated_points = points @ R_x.T  # Usamos la transposición para multiplicación de matrices
     return rotated_points
 ########
